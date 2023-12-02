@@ -86,23 +86,18 @@ int main(int argc,char *argv[]){
 
     pthread_t thread_prod, thread_cons;
 
-    numProd = atoi(argv[1]);
-    numCons = atoi(argv[2]);
-
-    printf("numProd %d\n", numProd);
-    printf("numCons %d\n", numCons);
-
-    if(numCons > 1 || numProd < 1){
-      
-      pthread_create(&thread_prod, NULL, producer, NULL);
-      pthread_create(&thread_cons, NULL, consumer, NULL);
-      pthread_join(thread_prod, NULL);
-      pthread_join(thread_cons, NULL);
-
+    if (argc != 3) {
+        printf("Modo de utilizar: ./consumer <no produtores> <no produtores>");
     }else{
-      printf("Os argumentos não atenden ");
+      numProd = atoi(argv[1]);
+      numCons = atoi(argv[2]);
+      
+      if(numCons >= 1 && numProd >= 1){
+        pthread_create(&thread_prod, NULL, producer, NULL);
+        pthread_create(&thread_cons, NULL, consumer, NULL);
+      }else{
+        printf("ONúmero de produtores e consumidores deve ser maior ou igual a 1");
+      exit(0);
+      }
     }
-
-
-    exit(0);
 }
