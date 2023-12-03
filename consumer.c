@@ -5,7 +5,7 @@
 #include<time.h>
 #define BUFFER_SIZE 5
 
-pthread_cond_t free_espace, full_space;
+
 pthread_mutex_t block;
 
 int buffer[BUFFER_SIZE];
