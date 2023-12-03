@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include<unistd.h>
 #include<time.h>
-#include<semaphore.h>
+
 
 
 #define BUFFER_SIZE 5
@@ -25,11 +25,7 @@ void* consumer(void *arg);
 
 int generatePosotiveNumber(){
 
-  srand(time(NULL));
-  int number = (rand() % 100) + 1;
-  printf("number gerado: %d\n", number); 
-  return number;
-
+  return rand() % 100 + 1;
 }
 
 int readBuffer(){
@@ -45,9 +41,10 @@ int readBuffer(){
 
 }
 
-void insertBuffer(int item){
+void insertBuffer(int value, int producerNumber){
 
-    buffer[position_insert] = item;
+    buffer[position_insert] = value;
+    printf("Thread  %d (value: %d)\n", producerNumber, value);
     position_write++;
     if(position_write == BUFFER_SIZE) {
       position_insert = 0;
@@ -56,35 +53,38 @@ void insertBuffer(int item){
 }
 
 void* producer(void *arg) {
-
-    for(int i = 0; i < numProd; i++){
+    while(1){
+      int producerNumber = *((int *)arg);  
       pthread_mutex_lock(&block);
-      while(counter == BUFFER_SIZE)
-        pthread_cond_wait(&free_espace, &block);
-      insertBuffer(generatePosotiveNumber());
-      pthread_cond_signal(&full_space);
+      if(counter < BUFFER_SIZE){
+        int number = generatePosotiveNumber();
+        buffer[counter] = number;
+        printf("Thread producer %d (value: %d)\n", producerNumber, number);
+        counter++;
+      }
       pthread_mutex_unlock(&block);
-    }
-    return NULL;
+  }
 }
 
-void* consumer(void* param){
 
-   for(int i = 0; i < numCons; i++){
+void* consumer(void *arg){
+
+    while(1){
+      int producerNumber = *((int *)arg);  
       pthread_mutex_lock(&block);
-      while(counter == 0)
-        pthread_cond_wait(&full_space, &block);
-      int item = readBuffer();
-      pthread_cond_signal(&free_espace);
-      pthread_mutex_unlock(&block);
-      printf("Valor lido: %d\n", item);
+      if(counter == 0){
+        int number = buffer[counter - 1];
+        printf("Thread consumer %d (value: %d)\n", producerNumber, number);
+        counter--;
+      }
+    pthread_mutex_unlock(&block);
     }
-    return NULL;
 }
 
 int main(int argc,char *argv[]){
 
     pthread_t thread_prod, thread_cons;
+    int id;
 
     if (argc != 3) {
         printf("Modo de utilizar: ./consumer <no produtores> <no produtores>");
@@ -93,11 +93,18 @@ int main(int argc,char *argv[]){
       numCons = atoi(argv[2]);
       
       if(numCons >= 1 && numProd >= 1){
-        pthread_create(&thread_prod, NULL, producer, NULL);
-        pthread_create(&thread_cons, NULL, consumer, NULL);
+        
+        for(id = 0; id < numProd; id++){
+          pthread_create(&thread_prod, NULL, producer, (void *)&id);
+        }
+        
+        for(id = 0; id < numCons; id++){
+          pthread_create(&thread_cons, NULL, consumer, (void *)&id);
+        }
+
       }else{
         printf("ONúmero de produtores e consumidores deve ser maior ou igual a 1");
-      exit(0);
+        exit(0);
       }
     }
 }
